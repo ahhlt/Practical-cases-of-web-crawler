@@ -1,0 +1,47 @@
+import re
+import requests
+import pprint
+# 下载一首歌曲的函数
+def download(media_url , name):
+    # 需要下载内容的网站
+    response = requests.get(media_url)
+    # 打开文件写入 二进制写入
+    file = open(name +'.mp3','wb')
+    # 写入数据
+    file.write(response.content)
+    file.close()
+
+# 根据请求获取下载信息
+def get_api(song_id):
+    #根据歌曲的id获取api接口
+    api_url = 'http://musicapi.taihe.com/v1/restserver/ting?method=baidu.ting.song.playAAC&format=jsonp&songid='+str(song_id)+'&from=web&_=1587291405851'
+    # 请求访问api地址
+    response = requests.get(api_url)
+    # 把json文件内容放到data中，该数据类型为字典
+    data = response.json()
+    # 打印出json文件内容
+    pprint.pprint(response.json())
+    # 获取下载地址
+    media_url = data['bitrate']['file_link']
+    # 获取歌名
+    name = data['songinfo']['title']
+    # 返回下载地址、歌名，作为download函数的参数
+    return media_url, name
+
+
+# 批量获取id
+def get_song_id():
+    response = requests.get('http://music.taihe.com/artist/2517')
+    # 解决乱码
+    response.encoding = response.apparent_encoding
+    html = response.text
+    print(html)
+    song_ids = re.findall('a href="/song/(.*?)" class="songlist-songname',html)
+    print(song_ids)
+    return song_ids
+
+song_ids = get_song_id()
+for song_id in song_ids:
+    media_url, name = get_api(song_id)
+#print(media_url,name)
+    download(media_url , name)
