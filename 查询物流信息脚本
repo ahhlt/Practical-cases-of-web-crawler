@@ -1,0 +1,40 @@
+import requests
+# import re
+# import pprint
+# 通过用户输入的快递单号,获取快递公司名称。
+def get_name():
+    # 设置请求头，伪装浏览器访问数据。
+    header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
+              'Referer': 'https: // www.kuaidi100.com /?from=openv',
+              'Host': 'www.kuaidi100.com',
+              'Cookie': 'Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035,1587374374; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587374527'}
+                    # 看网上大佬说必须要加Cookie，没加之前返回的内容是查询无结果，不过返回的不是对相应的物流信息。
+    number = input('请输入您的快递单号：')
+    # 从json文件中获取快递公司代号
+    express_url = 'https://www.kuaidi100.com/autonumber/autoComNum?resultv2=1&text=%s' % number
+    # 发送请求
+    response = requests.get(express_url,headers=header)
+    # response = requests.get(express_url)
+    data = response.json()
+    companies = data["auto"]
+    name = companies[0]['comCode']
+    print(name)
+    return name,number
+
+
+# 获取物流信息
+def get_info(name,number):
+    # header = {
+    #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
+    #     'Referer': 'https://www.kuaidi100.com/?from=openv',
+    #     'Host': 'www.kuaidi100.com',
+    #     'Cookie': 'csrftoken=e1uScdG2UBqmajILJzoAVijaHWCCADM1Eu7uLli1e5Q; WWWID=WWWCE565F406468B9177022248A2D9CFBF7; Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587371054'
+    #     }
+
+    info_url = 'http://www.kuaidi100.com/query?type=%s&postid=%s' % (name, number)
+    response = requests.get(info_url)
+    info = response.json()
+    print(info)
+
+name,number = get_name()
+get_info(name , number)
