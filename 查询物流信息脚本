@@ -1,14 +1,15 @@
 # www.kuaidi100.com 快递100网站
 import requests
-# import re
-# import pprint
+import json
+import random
+import pprint
 # 通过用户输入的快递单号,获取快递公司名称。
 def get_name():
     # 设置请求头，伪装浏览器访问数据。
     header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
               'Referer': 'https: // www.kuaidi100.com /?from=openv',
               'Host': 'www.kuaidi100.com',
-              'Cookie': 'Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035,1587374374; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587374527'}
+              'Cookie': 'csrftoken=e1uScdG2UBqmajILJzoAVijaHWCCADM1Eu7uLli1e5Q; WWWID=WWWCE565F406468B9177022248A2D9CFBF7; Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587371054'}
                     # 看网上大佬说必须要加Cookie，没加之前返回的内容是查询无结果，不过返回的不是对相应的物流信息。
     number = input('请输入您的快递单号：')
     # 从json文件中获取快递公司代号
@@ -19,23 +20,53 @@ def get_name():
     data = response.json()
     companies = data["auto"]
     name = companies[0]['comCode']
-    print(name)
     return name,number
 
 
 # 获取物流信息
 def get_info(name,number):
-    # header = {
-    #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
-    #     'Referer': 'https://www.kuaidi100.com/?from=openv',
-    #     'Host': 'www.kuaidi100.com',
-    #     'Cookie': 'csrftoken=e1uScdG2UBqmajILJzoAVijaHWCCADM1Eu7uLli1e5Q; WWWID=WWWCE565F406468B9177022248A2D9CFBF7; Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587371054'
-    #     }
-
-    info_url = 'http://www.kuaidi100.com/query?type=%s&postid=%s' % (name, number)
-    response = requests.get(info_url)
+    headers= {
+        'Referer': 'https://www.kuaidi100.com/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36X-Requested-With: XMLHttpRequest',
+        'Cookie':'csrftoken=e1uScdG2UBqmajILJzoAVijaHWCCADM1Eu7uLli1e5Q; WWWID=WWWCE565F406468B9177022248A2D9CFBF7; Hm_lvt_22ea01af58ba2be0fec7c11b25e88e6c=1587348793,1587371035; Hm_lpvt_22ea01af58ba2be0fec7c11b25e88e6c=1587371054'
+    }
+    # 此程序的重重重重重中之重！！！！！！！！！！！！！！！！！！！！
+    # 因为快递100是动态数据，必须要在请求头中加入Cookie部分,这个方法也是从网上的大佬那里搜到的
+    # 如果不加Cookie，获取到的快递信息与快递单号不匹配。
+    url_home = 'https://www.kuaidi100.com/'
+    res_home = requests.get(url_home, headers=headers)
+    headers['Cookie'] = json.dumps(requests.utils.dict_from_cookiejar(res_home.cookies))
+    # 整合放入url对应位置。
+    payload = {
+        'type':name,
+        'postid':number,
+        'temp':random.random(),
+        'phone':''
+    }
+    # 获取物流信息的json文件的url
+    info_url = 'http://www.kuaidi100.com/query'             #'https://www.kuaidi100.com/query?type={快点公司代号}&postid={快递单号}。format(name,number)'
+    response = requests.get(info_url,headers =headers,params=payload)
     info = response.json()
-    print(info)
+    if info['message'] == 'ok':
+        print('嘿，以下是您的快递信息哦！'+'\n')
+        for context in info['data']:
 
-name,number = get_name()
-get_info(name , number)
+            print('{} {}'.format(context['time'],context['context']))
+    else:
+        print('糟糕了，您输入的快递单号暂无物流信息，请您核对快递单号哦！')
+
+# 主函数
+while True:
+    name, number = get_name()
+    get_info(name, number)
+    decisio = input('请问小主是否继续查询呢(继续(y) or 退出(n))：')
+    if decisio == 'y':
+
+        name,number = get_name()
+        get_info(name , number)
+    elif decisio == 'n':
+        print('小主再见，欢迎下次使用！')
+        break
+    else:
+        print('哎呀！小主输错啦，请重新输入！')
+        decisio = input('哎呀！小主输错啦，请重新输入：')
