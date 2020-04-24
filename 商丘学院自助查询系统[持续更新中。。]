@@ -1,0 +1,186 @@
+'''声明:
+        本程序只用于学习交流，所涉及网址若有侵权，请联系QQ779351771删除
+        此脚本只是为了方便同学们(目前仅限于2018级同学)查询成绩及课表(暂未实现)，也可用作练习巩固Python 相关知识。
+        程序中有部分调试代码,为方便理解已被注释
+        大家不要恶意攻击教务系统'''
+import requests
+import re
+#  思路：
+#  python模拟登陆
+#  获取 post所需求的数据
+#  get 登录界面 re匹配出lt
+#  post请求登录界面
+# requests.session 保持状态
+# Cookie = input('请输入Cookie:')
+
+# 保持登录，把post成功后的cookie 保存在本地
+session = requests.session()
+
+# 请求头 伪装成浏览器访问
+headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
+                # 'Cookie':Cookie,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Referer': 'http://cas.sqxy.edu.cn/cas/login?service=http%3A%2F%2Fjwxt.sqxy.edu.cn%3A80%2Feams%2Fsso%2Flogin.action%3FtargetUrl%3Dbase64aHR0cDovL2p3eHQuc3F4eS5lZHUuY246ODAvZWFtcy9ob21lRXh0LmFjdGlvbg%3D%3D'
+                }
+
+
+# 获取登录请求表单中的数据lt,动态数据在登录界面的html内，用正则配合列表切片(也可用xpath等等，正则是一种最简单的方法，有时候用起来不是很方便)。
+def get_lt():
+   # login_url 从智慧校园平台登录的url
+    login_url = 'http://cas.sqxy.edu.cn/cas/login?service=http%3A%2F%2Fjwxt.sqxy.edu.cn%3A80%2Feams%2Fsso%2Flogin.action%3FtargetUrl%3Dbase64aHR0cDovL2p3eHQuc3F4eS5lZHUuY246ODAvZWFtcy9ob21lRXh0LmFjdGlvbg%3D%3D'
+    response =session.get(login_url, headers=headers)
+    # 返回网页源代码
+    html = response.text
+    # 用正则结合列表切片匹配出动态lt数据，这种方法可能比较弱智，不过只要能得到目标数据就ok了
+    lt = re.findall('"lt" value=".*?" />', html)
+    lt_1 = lt[0][12::]
+    lt_2 = lt_1[:-4:]
+    # print(response.text)
+    # print(lt)
+    #print(lt_1)
+    #print(lt_2)
+    # return lt_2 函数get_login需要使用,否则函数结束数据就被丢弃了
+    return lt_2
+#lt_2 = get_lt()
+
+
+# post
+def get_login():
+    print('欢迎使用成绩查询脚本',end='')
+    print('默认密码为身份证后六位')
+    # 输入帐号、密码，传到data中
+    username = input('请输入您的帐号：')
+    password = input('请输入您的密码：')
+    url = 'http://cas.sqxy.edu.cn/cas/login?service=http%3A%2F%2Fjwxt.sqxy.edu.cn%3A80%2Feams%2Fsso%2Flogin.action%3FtargetUrl%3Dbase64aHR0cDovL2p3eHQuc3F4eS5lZHUuY246ODAvZWFtcy9ob21lRXh0LmFjdGlvbg%3D%3D'
+    data = {
+        'username': username,
+        'password': password,
+        '_rememberMe': 'on',
+        'lt': lt_2,
+        '_rememberMe': 'on',
+        '_eventId': 'submit'
+    }
+    resp =session.post(url, data=data, headers=headers)
+    if resp.status_code == 200:
+        print('登录成功')
+        # print(resp.text)
+        # print(resp.cookies)
+        # 这步也可不要
+        Cookies1 =requests.utils.dict_from_cookiejar(resp.cookies)
+        #print(Cookies1)
+
+        return Cookies1
+    else:
+        print('post失败')
+#Cookie1 = get_login()
+
+
+def get_grade():
+
+    header = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36',
+        'Content-Type': 'text / html;charset=UTF-8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
+    }
+
+    # 2019-2020第一学期 semesterId=29  2018-2019第一学期27 第二学期28
+    print('☆' * 10 + ' 1. 2018-2019-第一学期 ' + '☆' * 10)
+    print('☆' * 10 + ' 2. 2018-2019-第二学期 ' + '☆' * 10)
+    print('☆' * 10 + ' 3. 2019-2020-第一学期 ' + '☆' * 10)
+    name = input('请输入您的姓名：')
+    get_semesterId1 = input(name+'同学您好！请选择您要查询哪一学期的成绩(输入编号即可):')
+
+    if get_semesterId1 == '1':
+        Id = 27
+        term = '2018-2019-1'
+        grade_url = 'http://jwxt.sqxy.edu.cn/eams/teach/grade/course/person!search.action?semesterId={}&projectType=&_=1587659316567'.format(Id)
+        grade_resp = session.get(grade_url, headers=header)
+        # print(grade_resp.text)
+        # html1 =grade_resp.content
+        with open(name + term + '.html', 'wb') as f:
+            f.write(grade_resp.content)
+            f.close()
+        print('您的成绩已下载到当前目录')
+
+    elif get_semesterId1 =='2':
+        Id = 28
+        term = '2018-2019-2'
+        grade_url = 'http://jwxt.sqxy.edu.cn/eams/teach/grade/course/person!search.action?semesterId={}&projectType=&_=1587659316567'.format(Id)
+        grade_resp = session.get(grade_url, headers=header)
+        # print(grade_resp.text)
+        # html1 =grade_resp.content
+        with open(name + term + '.html', 'wb') as f:
+            f.write(grade_resp.content)
+            f.close()
+        print('您的成绩已下载到当前目录')
+
+    elif get_semesterId1 =='3':
+        Id = 29
+        term = '2019-2020-1'
+        grade_url = 'http://jwxt.sqxy.edu.cn/eams/teach/grade/course/person!search.action?semesterId={}&projectType=&_=1587659316567'.format(Id)
+        grade_resp =session.get(grade_url, headers=header)
+        # print(grade_resp.text)
+        # html1 =grade_resp.content
+        with open(name + term + '.html', 'wb') as f:
+            f.write(grade_resp.content)
+            f.close()
+        print('您的成绩已下载到当前目录')
+    else:
+        print('您的输入有误！')
+    return name
+
+
+# 学籍信息
+def std_info():
+    std_info_url = 'http://jwxt.sqxy.edu.cn/eams/stdDetail.action'
+    resp = session.get(std_info_url,headers= headers)
+    with open('学籍信息.html','wb') as f:
+        f.write(resp.content)
+        f.close()
+    print('您的学籍信息已下载到当前目录')
+def course_list():
+    pass
+def select_course():
+    print('此功能尚未开发完成')
+def tea_evaluation():
+    print('此功能尚未开发完成')
+while True:
+    print('欢迎使用商丘学院自助查询系统')
+    print('请选择以下功能的序号')
+    print('1.学籍信息')
+    print('2.我的课表')
+    print('3.我的成绩')
+    print('4.自主选课')
+    print('5.一键评教')
+    print('0.退出系统')
+    decision  = input('请输入您要查询的信息：')
+
+    if decision == '1':
+        lt_2 = get_lt()
+        Cookie1 = get_login()
+        std_info()
+
+    elif decision == '2':
+        lt_2 = get_lt()
+        Cookie1 = get_login()
+        course_list()
+
+    elif decision == '3':
+        lt_2 = get_lt()
+        Cookie1 = get_login()
+        get_grade()
+
+    elif decision == '4':
+        lt_2 = get_lt()
+        Cookie1 = get_login()
+        select_course()
+
+    elif decision == '5':
+        lt_2 = get_lt()
+        Cookie1 = get_login()
+        tea_evaluation()
+    elif decision == '0':
+        break
+    else:
+        print('您的输入有误！')
