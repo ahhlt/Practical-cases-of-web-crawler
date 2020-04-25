@@ -5,6 +5,7 @@
         大家不要恶意攻击教务系统'''
 import requests
 import re
+from lxml import etree
 #  思路：
 #  python模拟登陆
 #  获取 post所需求的数据
@@ -47,7 +48,7 @@ def get_lt():
 
 # post
 def get_login():
-    print('欢迎使用成绩查询脚本',end='')
+    print('欢迎使用成绩查询脚本')
     print('默认密码为身份证后六位')
     # 输入帐号、密码，传到data中
     username = input('请输入您的帐号：')
@@ -58,7 +59,7 @@ def get_login():
         'password': password,
         '_rememberMe': 'on',
         'lt': lt_2,
-        '_rememberMe': 'on',
+        # '_rememberMe': 'on',
         '_eventId': 'submit'
     }
     resp =session.post(url, data=data, headers=headers)
@@ -97,7 +98,8 @@ def get_grade():
         grade_url = 'http://jwxt.sqxy.edu.cn/eams/teach/grade/course/person!search.action?semesterId={}&projectType=&_=1587659316567'.format(Id)
         grade_resp = session.get(grade_url, headers=header)
         # print(grade_resp.text)
-        # html1 =grade_resp.content
+        # html =etree.HTML(grade_resp.text)
+        # print(html)
         with open(name + term + '.html', 'wb') as f:
             f.write(grade_resp.content)
             f.close()
@@ -140,11 +142,19 @@ def std_info():
         f.close()
     print('您的学籍信息已下载到当前目录')
 def course_list():
-    pass
+    print('此功能尚未开发')
+    course_list_url = 'http://jwxt.sqxy.edu.cn/eams/courseTableForStd!courseTable.action?setting.kind=std&ids=62323'
+    resp = session.get(course_list_url,headers=headers)
+    with open('课表.html','wb') as f :
+        f.write(resp.content)
+        f.close()
+    print('课表已下载到当前目录')
 def select_course():
-    print('此功能尚未开发完成')
+    print('此功能尚未开发')
 def tea_evaluation():
-    print('此功能尚未开发完成')
+    print('此功能尚未开发')
+lt_2 = get_lt()
+Cookie1 = get_login()
 while True:
     print('欢迎使用商丘学院自助查询系统')
     print('请选择以下功能的序号')
@@ -157,29 +167,20 @@ while True:
     decision  = input('请输入您要查询的信息：')
 
     if decision == '1':
-        lt_2 = get_lt()
-        Cookie1 = get_login()
         std_info()
 
     elif decision == '2':
-        lt_2 = get_lt()
-        Cookie1 = get_login()
         course_list()
 
     elif decision == '3':
-        lt_2 = get_lt()
-        Cookie1 = get_login()
         get_grade()
 
     elif decision == '4':
-        lt_2 = get_lt()
-        Cookie1 = get_login()
         select_course()
 
     elif decision == '5':
-        lt_2 = get_lt()
-        Cookie1 = get_login()
         tea_evaluation()
+
     elif decision == '0':
         break
     else:
