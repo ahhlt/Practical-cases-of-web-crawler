@@ -1,0 +1,151 @@
+from lxml import etree
+import requests
+import pprint
+import re
+import os
+
+''' 程序很简单有基础的同学应该都可以看懂，欢迎交流。'''
+
+# 用户输入需要下载的歌曲名或者歌手名
+def get_search_key(i):
+    if i == '1':
+        key = input('请输入您要下载的歌手名：')
+    #print(key)
+        return key
+    elif i =='2':
+        key = input('请输入您要下载的歌曲名：')
+        return key
+    else:
+        print('输入有误')
+# get_search_key()
+
+
+# 根据歌手 获取Top50歌曲id
+def get_songs_id(key):
+    headers = {
+    #'Cookie':Cookie,
+    'Accept': 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'Host': 'music.taihe.com',
+    'Referer':'http://music.taihe.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36'
+    }
+    all_grade_url = 'http://music.taihe.com/search?key={}'.format(key)
+    response = requests.get(all_grade_url,headers=headers)
+    # 万能解决乱码
+    response.encoding = response.apparent_encoding
+    # print(response.text)
+    songs_id = re.findall('&quot;([0-9]{9})&quot;',response.text)
+    #print(songs_id)
+    # 获取的id中可能有重复的，可把列表转化为集合，再回转为列表
+    songs_id1 = set(songs_id)
+    songs_id2 = list(songs_id1)
+    # 访问时间可能需要十几秒，提示用户等待
+    print('正在访问，请稍后。。。')
+    # status_code 判断请求是否成功
+    if response.status_code == 200:
+        print('访问成功')
+        print(songs_id2)
+    else:
+        decision = input('未找到目标，请重新输入:')
+        print('可能是网络原因，请耐心等待')
+        get_songs_id(key=decision)
+    return songs_id2
+
+# 根据歌曲名 获取相关歌曲id。  这里解释一下，调试过程中发现歌曲id在网页源代码的位置不一样， 所以就只改了一下正则表达式的匹配对象pattern。
+# 实际上用一种获取方法也行，不过有可能获取不到歌曲的原唱，因为用户搜歌曲名多半是想要下载原唱的歌曲，因此就考虑两种不同方法使用两种pattern进行匹配
+def get_songs_id_plus(key):
+    headers = {
+    #'Cookie':Cookie,
+    'Accept': 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'Host': 'music.taihe.com',
+    'Referer':'http://music.taihe.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36'
+    }
+    all_grade_url = 'http://music.taihe.com/search?key={}'.format(key)
+    response = requests.get(all_grade_url,headers=headers)
+    response.encoding = response.apparent_encoding
+    # print(response.text)
+    songs_id = re.findall('<a href="/song/(.*?)" target=_blank class',response.text)
+    #print(songs_id)
+    songs_id1 = set(songs_id)
+    songs_id2 = list(songs_id1)
+    print('正在访问，请稍后。。。')
+    if response.status_code == 200:
+        print('访问成功')
+        print(songs_id2)
+    else:
+        decision = input('未找到目标，请重新输入:')
+        print('可能是网络原因，请耐心等待')
+        get_songs_id(key=decision)
+    return songs_id2
+
+
+# 获取歌曲的下载地址和歌名
+def get_download_url(songs_id):
+    #根据歌曲的id获取api接口
+    download_url = 'http://musicapi.taihe.com/v1/restserver/ting?method=baidu.ting.song.playAAC&format=jsonp&songid='+str(songs_id)+'&from=web&_=1587291405851'
+    # 请求访问api地址
+    response = requests.get(download_url)
+    # 把json文件内容放到data中，该数据类型为字典
+    data = response.json()
+    # 打印出json文件内容
+    # 获取下载地址
+    # 这里一开始想捕获异常，后来感觉没必要，如果报错可尝试重新执行代码
+    #try:
+    media_url = data['bitrate']['file_link']
+    # 获取歌名
+    name = data['songinfo']['title']
+    return media_url, name
+   # except BaseException as e :
+    #    print('获取失败')
+    # 返回下载地址、歌名，作为download函数的参数
+        #return media_url, name
+        
+# 下载歌曲文件，相当于保存。
+# 这里面的 j 只是为了使相同歌曲名的文件保持区分，如果文件名相同的话，文件不会被重复保存。
+def download_music(meidia_url,name,key,j):
+    response = requests.get(meidia_url)
+
+    def create_file(key):
+        #key = input('请输入文件名：')
+        key = key
+        try:
+            file = os.path.exists(key)
+            if not file:
+                os.makedirs(key)
+                print('创建成功')
+            else:
+                with open('H:/untitled/' + key + '/' + name + str(j) + '.mp3','wb') as f:
+                    f.write(response.content)
+                    f.close()
+
+                    print(name+str(j)+'下载成功')
+
+        except:
+
+            print('下载失败')
+
+    create_file(key= key)
+
+# 程序的起始位置，相当于主函数。
+print('1. 按歌手下载')
+print('2. 按歌名下载')
+print('提示：选择序号即可')
+i = input('请选择：')
+if i == '1' :
+    key = get_search_key(i=i)
+    songs_id2 = get_songs_id(key=key)
+    j = 0
+    for id in songs_id2:
+        j += 1
+        media_url,name = get_download_url(id)
+        download_music(meidia_url=media_url,name=name,key=key,j=j)
+
+elif i == '2':
+    key = get_search_key(i=i)
+    songs_id2 = get_songs_id_plus(key=key)
+    j = 0
+    for id in songs_id2:
+        j += 1
+        media_url, name = get_download_url(id)
+        download_music(meidia_url=media_url, name=name, key=key,j=j)
