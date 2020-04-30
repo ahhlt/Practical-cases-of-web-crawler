@@ -1,0 +1,87 @@
+'''代码仅供学习交流'''
+import requests
+import os
+import json
+
+
+headers = {
+    'user - agent': 'Mozilla / 5.0(Windows NT 10.0;Win64;x64) AppleWebKit / 537.36(KHTML, likeGecko) Chrome / 81.0.4044.113Safari / 537.36'
+}
+
+
+def get_hero_id():
+    '''获取英雄明以及对应的英文名'''
+    hero_info_url ='https://game.gtimg.cn/images/lol/act/img/js/heroList/hero_list.js'
+    resp = requests.get(hero_info_url,headers=headers).content.decode('GBK')
+    data = json.loads(resp)
+    Alias_list = []
+    Title_list = []
+    for info in data['hero']:
+        alias = info['alias']
+        title = info['title']
+        Alias_list.append(alias)
+        Title_list.append(title)
+    # 将两个列表转化为字典
+    infodict = dict(zip(Title_list,Alias_list))
+    print('*'*30)
+    print('欢迎使用小鼠标LOL皮肤下载器')
+    print('*'*30)
+    print(infodict.keys())
+    return infodict
+    # print(infodict)
+    # decision = input('输入您的选择：')
+    # print(infodict[decision])
+
+
+def get_img_id(infodict):
+    '''获取某个英雄的所有皮肤id'''
+
+    # 这里用户输入英雄的中文名
+    decision = input('请输入您要下载皮肤的英雄名：')
+
+    # 这里hero返回infodict中对应的英文名
+    hero = infodict[decision]
+    print(hero)
+
+    img_id = 'https://lol.qq.com/biz/hero/{}.js'.format(hero)
+    #print(img_id)
+    # no ='{''if(!LOLherojs)var LOLherojs={champion:{}};LOLherojs.champion.'+str(hero)+'=''}'
+    # print(no)
+    resp = requests.get(img_id,headers=headers).content.decode('GBK')
+    data = json.loads ('{'+resp.strip('if(!LOLherojs)var LOLherojs={champion:{}};LOLherojs.champion.'+str(hero)+'=')+'}')
+    listid=[]
+    listname =[]
+    for id in data['data']['skins']:
+        #print(id)
+        ids = id['id']
+        name = id['name']
+        listid.append(ids)
+        listname.append(name)
+    #print(listid)
+    #print(listname)
+    datadict =dict(zip(listid,listname))
+    return datadict,decision
+#get_img_id()
+
+
+def save_img(id,name,decision):
+    img_url = 'https://game.gtimg.cn/images/lol/act/img/skin/big{}.jpg'.format(id)
+    resp = requests.get(img_url,headers=headers)
+    file = os.path.exists(decision)
+    try:
+        if not file:
+            os.makedirs(decision)
+        else:
+            with open('H:/untitled/'+decision+'/'+name+'.jpg','wb') as f:
+                f.write(resp.content)
+                f.close()
+            print(name+'下载成功')
+    except:
+        print('下载失败')
+
+if __name__ == '__main__':
+
+    infodict = get_hero_id()
+    datadict,decision = get_img_id(infodict=infodict)
+    for id_s,name in datadict.items():
+        save_img(id=id_s,name=name,decision=decision)
