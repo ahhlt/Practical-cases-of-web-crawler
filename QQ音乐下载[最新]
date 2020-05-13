@@ -1,0 +1,122 @@
+import requests
+import json
+import re
+import os
+
+#keyword = input(':')
+def get_songs_id(keyword):
+    '''获取歌曲id'''
+    header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36'}
+    songs_id_url ='https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=70680747812740996&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w={}&g_tk_new_20200303=5381&g_tk=5381&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0'.format(keyword)
+
+    response = requests.get(songs_id_url,headers = header)
+    data = json.loads(response.text)
+    #print(data)
+    name_list = []
+    api_info_list = []
+    for i in range(len(data['data']['song']['list'])):
+        id = data['data']['song']['list'][i]['mid']
+        music_name = data['data']['song']['list'][i]['title']
+        singer_name = data['data']['song']['list'][i]['singer'][0]['name']
+        #print(id)
+        api_info = 'https://y.qq.com/n/yqq/song/{}.html'.format(id)
+        #print(api_info)
+        music_names = '{0}-{1}'.format(music_name,singer_name)
+        name_list.append(music_names)
+        api_info_list.append(api_info)
+    #print(name_list)
+    #print(api_info_list)
+    download_info = dict(zip(name_list,api_info_list))
+    #print(download_info)
+    return download_info
+#download_info = get_songs_id(keyword=keyword)
+
+def get_media_url(mid):
+    '''获取歌曲下载地址'''
+    headers = {
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Length': '65',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Host': 'www.douqq.com',
+        'Origin': 'http://www.douqq.com',
+        'Referer': 'http://www.douqq.com/qqmusic/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest'
+        }
+    data = {
+        'mid':mid
+    }
+    api_url = 'http://www.douqq.com/qqmusic/qqapi.php'
+    response = requests.post(api_url, data = data, headers = headers).text
+    info = json.loads(response)
+    #media_url_list = []
+    result = info.replace('\/','/')
+    media_url = re.findall('"m4a":"(.*?),"',result)
+    #print(media_url[0])
+    #media_url_list.append(media_url[0])
+    #print(media_url_list)
+    return media_url[0]
+
+# for name,mid in download_info.items():
+#     print(name,mid)
+#     media_url =  get_media_url(mid=mid)
+#     #print(media_url)
+
+
+# def download_media(url,name):
+#     resp = requests.get(url=url)
+#     with open(name+'.mp3',"wb") as f:
+#         f.write(resp.content)
+#         f.close
+
+def download_media(url,name,keyword):
+    '''下载音乐文件'''
+    response = requests.get(url=url)
+    # try:
+    #     file = os.path.exists(keyword)
+    #     if not file:
+    #         os.makedirs(keyword)
+    #     else:
+    #         with open(keyword + '/' + name  + '.mp3', 'wb') as f:
+    #             f.write(response.content)
+    #             f.close()
+
+    #             print(name + '下载成功')
+
+    # except:
+
+    #     print(name + '下载失败')
+
+    
+    with open(keyword + '/' + name + ".mp3" , 'wb') as f:
+        f.write(response.content)
+        f.close()
+
+        print(name + '下载成功')
+
+if __name__ == "__main__":
+    print('*'*5+'欢迎使用小鼠标QQ音乐下载器'+'*'*5)
+    keyword = input('请输入您需要下载的歌曲名:')
+    download_info = get_songs_id(keyword=keyword)
+    print('亲，查询结果如下')
+    print('*'*30)
+
+    for info in download_info.keys():
+        print(info)
+    print('*'*30)
+    os.system('pause')
+    music_file = os.path.exists(keyword)
+    if not music_file:
+        os.makedirs(keyword) 
+    for name,mid in download_info.items():
+        media_url =  get_media_url(mid=mid)
+        # music_file = os.path.exists(keyword)
+        # if not music_file:
+        #     os.makedirs(keyword)
+        # else:
+        download_media(url=media_url,name=name,keyword=keyword)
+    print(keyword+'-下载完毕')
+    print('欢迎下次使用！')
