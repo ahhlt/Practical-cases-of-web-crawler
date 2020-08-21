@@ -1,0 +1,153 @@
+import requests
+from bs4 import BeautifulSoup
+import bs4
+
+def GetHTMLText(Univer_RANK_Url):
+    '''获取某类高校页面HTML代码'''
+    try:
+        r = requests.get(Univer_RANK_Url, timeout = 30)
+        r.raise_for_status()
+        r.encoding = r.apparent_encoding
+        return r.text                  # r.text作为html返回
+    except:
+        return '异常'
+
+def fillUnivList(ulist, html, user):
+
+    soup = BeautifulSoup(html, "html.parser")
+    for tr in soup.find('tbody').children:
+        if isinstance(tr, bs4.element.Tag):
+            tds = tr('td')
+            if user == '0': ## 总榜
+                ulist.append([tds[0].string, tds[1].string, tds[2].string, tds[4].string])
+            elif user == '7': ## 艺术
+                ulist.append([tds[0].string, tds[1].string, tds[5].string, tds[6].string])
+            elif user == '9' or user == '10':## 民办or独立
+                ulist.append([tds[0].string, tds[1].string, tds[2].string, tds[3].string])
+            else: ## 1~6 and 8
+                ulist.append([tds[0].string, tds[1].string, tds[2].string, tds[3].string, tds[4].string])
+def printUnivList(ulist, num, user):
+
+    #print("{:^10}\t{:^6}\t{:^6}\t{:^10}".format("排名", "学校名称", "所在地", "总分"))
+
+    if user == '0' or user == '9' or user == '10': #zongbang总榜
+        print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}".format("排名", "学校名称", "所在地", "总分", chr(12288)))
+        for i in range(num):
+            try:
+                u = ulist[i]
+                if u[3] is None:
+                    u[3] = '位次相同'
+                #print("{:^10}\t{:^6}\t{:^10}".format(u[0], u[1], u[2]), u[3])
+                print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}".format(u[0], u[1], u[2], u[3], chr(12288)))
+            except:
+                pass
+            continue
+    elif user == '7': ## yishu艺术
+        #try:
+            print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}".format("学校名称", "所在地", "就业率", "深造率", chr(12288)))
+            for i in range(num):
+                try:
+                    u = ulist[i]
+                    if u[3] is None or u[2] is None:
+                        u[2] = ' '
+                        u[3] = ' '
+                    # print("{:^10}\t{:^6}\t{:^10}".format(u[0], u[1], u[2]), u[3])
+                    print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}".format(u[0], u[1], u[2], u[3], chr(12288)))
+                except TypeError:
+                    pass
+                continue
+    else: #1-6 8
+        print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}".format("排名", "全国排名", "学校名称", "所在地", "总分", chr(12288)))
+        for i in range(num):
+            #try:
+                u = ulist[i]
+                if u[4] is None:
+                    u[4] = ' '
+                # print("{:^10}\t{:^6}\t{:^10}".format(u[0], u[1], u[2]), u[3])
+                print("{0:^20}\t{1:^20}\t{2:^20}\t{3:^20}\t{4:^20}".format(u[0], u[1], u[2], u[3], u[4], chr(12288)))
+            #except:
+             #   pass
+            #continue
+
+def get_Rank_Url():
+    ''''''
+    try:
+        r = requests.get("http://zuihaodaxue.com/rankings.html", timeout = 30)
+        r.raise_for_status()
+        r.encoding = r.apparent_encoding
+        html = r.text
+        soup = BeautifulSoup(html, 'html.parser')
+        html1 = soup.find_all('div', 'smallpic')
+        #print(soup.find_all('a'))
+        univRankUrl = []
+        univType = []
+        for urltag in soup.find_all('a'):
+            univRankUrl.append(urltag.attrs['href'])
+        #print(univRankUrl[15:26:1])
+        for nametag in soup.find_all('span'):
+            univType.append(nametag)
+        #print(univType[7:18:1])
+        return univType,univRankUrl
+    except:
+        return "访问异常"
+#univType, univRankUrl = get_Rank_Url()
+
+def welcome_screen(univType):
+    ''''''
+    print('欢迎使用全国大学排名查询脚本！')
+    print('请输入对应数字查询：')
+    print('0 .' + str(univType[17]).rstrip("</span>").lstrip("<span>"))
+    print('1 .' + str(univType[7]).rstrip("</span>").lstrip("<span>"))
+    print('2 .' + str(univType[8]).rstrip("</span>").lstrip("<span>"))
+    print('3 .' + str(univType[9]).rstrip("</span>").lstrip("<span>"))
+    print('4 .' + str(univType[10]).rstrip("</span>").lstrip("<span>"))
+    print('5 .' + str(univType[11]).rstrip("</span>").lstrip("<span>"))
+    print('6 .' + str(univType[12]).rstrip("</span>").lstrip("<span>"))
+    print('7 .' + str(univType[13]).rstrip("</span>").lstrip("<span>"))
+    print('8 .' + str(univType[14]).rstrip("</span>").lstrip("<span>"))
+    print('9 .' + str(univType[15]).rstrip("</span>").lstrip("<span>"))
+    print('10.' + str(univType[16]).rstrip("</span>").lstrip("<span>"))
+
+def getUserDecision(univRankUrl):
+    ''''''
+    url = 'http://zuihaodaxue.com/'
+    user = input('请输入序号(输入q退出)：')
+    if user == '0':
+        return url + univRankUrl[25], user
+    elif user == '1':
+        return url + univRankUrl[15], user
+    elif user == '2':
+        return url + univRankUrl[16], user
+    elif user == '3':
+        return url + univRankUrl[17], user
+    elif user == '4':
+        return url + univRankUrl[18], user
+    elif user == '5':
+        return url + univRankUrl[19], user
+    elif user == '6':
+        return url + univRankUrl[20], user
+    elif user == '7':
+        return url + univRankUrl[21], user
+    elif user == '8':
+        return url + univRankUrl[22], user
+    elif user == '9':
+        return url + univRankUrl[23], user
+    elif user == '10':
+        return url + univRankUrl[24], user
+    elif user == 'q':
+        pass
+    else:
+        print('输入有误')
+
+def main():
+    ''''''
+    uinfo = []
+    univType, univRankUrl = get_Rank_Url()
+    welcome_screen(univType)
+    Univer_RANK_Url,user = getUserDecision(univRankUrl)
+    print("本次获取信息的链接："+ Univer_RANK_Url)
+    html = GetHTMLText( Univer_RANK_Url)
+    fillUnivList(uinfo, html, user)
+    print("共计" + str(len(uinfo)) + "所高校")
+    printUnivList(uinfo, len(uinfo),user)
+main()
