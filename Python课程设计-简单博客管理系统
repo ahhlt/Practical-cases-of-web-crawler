@@ -1,0 +1,268 @@
+''' Python面向对象实现简单博客管理系统
+    要求：1.实现用户登录、注册界面
+          2.实现对博客文章的增、删、查、改等功能
+          3.博客文章保存到文件
+          4.用户信息保存到json文件中
+'''
+import time
+import os
+import json
+import datetime
+class Main_interface():
+    ''' 主界面 '''
+    def __init__(self):
+        self.user = User()
+        self.article = Article()
+
+    def welcome_interface(self):
+        ''' 欢迎界面 '''
+        print("欢迎使用博客管理系统！")
+        print("1.登录")
+        print("2.注册")
+        print("3.退出")
+        user = input("请输入序号：")
+        if user == '1':
+            self.user.login()
+        elif user == '2':
+            self.user.register()
+        else:
+            exit()
+
+class After_login_interface():
+    ''' 登录后界面类'''
+    def __init__(self):
+        # 实例化Article
+        self.article = Article()
+
+    def after_login(self):
+        ''' 登录后界面 '''
+        print("1.写文章")
+        print("2.查看文章")
+        print("3.全部文章")
+        print("4.修改文章")
+        print("5.删除文章")
+        print("0.退出系统")
+        user = input("请输入序号:")
+        if user == '1':
+            self.article.add_article()
+        elif user == '2':
+            self.article.find_one_articel()
+        elif user == '3':
+            self.article.show_all_article()
+        elif user == '4':
+            self.article.modify_article()
+        elif user == '5':
+            self.article.del_article()
+        elif user == '0':
+            exit()
+        else:
+            print("请输入正确的序号：")
+            self.after_login()
+
+class User():
+    ''' 用户类 '''
+    def __init__(self):
+        self.after_login_interface = After_login_interface()
+        self.info_dict = {}  # 以字典形式临时存放用户注册信息，便于随后存到json文件中
+        self.username = ''
+        self.name_info = []
+        self.password = ''
+
+    def login(self):
+        ''' 用户登录 '''
+        print("正在登录...")
+        self.username = input("请输入用户名:")
+        with open(r"H:\untitled\Spider\BlogData\user_info.json", 'r') as f:
+            for info in f.readlines():
+                try:
+                    self.name_info.append(str(json.loads(info).keys()))
+                    self.password = str(json.loads(info)[self.username])
+                except:
+                    pass
+        if str("dict_keys(['" + self.username + "'])") in self.name_info:
+            password = input("请输入密码:")
+            if password == self.password:
+                print("登陆成功!")
+
+                self.after_login_interface.after_login()
+            else:
+                print("密码错误!")
+        else:
+            print('用户名不存在!')
+            self.re_login()
+
+    def re_login(self):
+        '''重新登录 '''
+
+        user_desicion = input("是否注册(1.注册帐号 2.重新登录 3.退出系统)")
+        if user_desicion == '1':
+            self.register()
+        elif user_desicion == '2':
+            self.login()
+        elif user_desicion == '3':
+            exit()
+        else:
+            print('输入有误，请重新输入！')
+            self.re_login()
+
+    def register(self):
+        ''' 用户注册 '''
+        print("正在注册...")
+        self.username = input("请输入您想要使用的用户名：")
+        with open(r"H:\untitled\Spider\BlogData\user_info.json", 'r') as f:
+            for info in f.readlines():
+                try:
+                    self.name_info.append(str(json.loads(info).keys()))
+                except:
+                    pass
+        #print(str("dict_keys([" + "'" + self.username + "'" + "])"))
+        if str("dict_keys(['" + self.username + "'])") in self.name_info:
+            print('您输入的用户名已存在，请重新输入：')
+            self.register()
+        else:
+            # self.info_dict['self.username'] = self.username  # 将用户输入的self.username存到字典中
+            password = input("请输入您想要使用的密码：")
+            verify_password = input("请再次确认密码：")
+            if password == verify_password:
+                print("注册成功！")
+                # 注册成功后创建一个名为self.username的文件夹
+                try:
+                    if not os.path.exists("H://untitled//Spider//BlogData//" + self.username + "//"):
+                        os.mkdir("H://untitled//Spider//BlogData//" + self.username + "//")
+                except:
+                    print("个人文件夹创建失败")
+                self.info_dict[self.username] = password # 将用户输入的password存到字典
+                # print(self.info_dict)
+                json_str = json.dumps(self.info_dict) # 将用户输入的self.username和password转换为json格式并存入json文件
+                with open(r"H:\untitled\Spider\BlogData\user_info.json", 'a+') as json_file:
+                    json_file.write(json_str + '\n')
+                    json_file.close()
+
+                print("正在返回登录界面，请稍后...")
+                time.sleep(3)
+                self.login()
+            else:
+                print("两次输入的密码不相同，注册失败!")
+                print("正在返回注册界面,请稍后...")
+                time.sleep(3)
+                self.register()
+
+class Article():
+    ''' 博客文章类 '''
+    def __init__(self):
+        self.username = ''
+        self.article_list = []
+    def add_article(self):
+        ''' 添加文章 -- 写文章 '''
+
+        self.username = input("请验证您的用户名：")
+        title = input("请输入文章名：")
+        file_path = "H://untitled//Spider//BlogData//" + self.username + "//"
+        if title  in os.listdir(file_path):
+            print('文章已存在！请重新输入')
+            self.add_article()
+        else:
+            try:
+                with open("H://untitled//Spider//BlogData//" + self.username + "//"+ title + ".txt", 'w') as file:
+                    file.write('标题:' + title )
+                    file.write('时间:' + datetime.datetime.now().strftime('%Y-%m-%d'))
+                    content = input("请输入文章内容：")
+                    file.write('正文：'+ content)
+                    file.close()
+                    print('文章已保存！')
+            except:
+                print("用户名验证失败！")
+            user_decision = input("是否继续写文章(1.继续 2.退出系统)")
+            if user_decision == '1':
+                self.add_article()
+            else:
+                exit()
+
+    def find_one_articel(self):
+        ''' 查找文章 '''
+        print("正在调用查找一篇文章方法")
+
+        self.show_all_article()
+
+    def show_all_article(self):
+        ''' 展示所有文章 '''
+        print("正在调用展示所有文章方法")
+        self.username = input("请验证您的用户名：")
+        file_path = "H://untitled//Spider//BlogData//" + self.username + "//"
+        self.article_list = os.listdir(file_path)
+        print("*" * 20)
+        if len(self.article_list) == 0:
+            print("您还没有写文章！")
+            exit()
+        for article_name in self.article_list:
+            print(article_name)
+        print("*" * 20)
+        user_decision = input("输入文章名：") + '.txt'
+        if user_decision in self.article_list:
+            with open("H://untitled//Spider//BlogData//" + self.username + "//" + user_decision, 'r') as f:
+                for text in f.readlines():
+                    print(text)
+        else:
+            print("您查找的文章不存在！")
+
+    def del_article(self):
+        ''' 删除文章 '''
+        print("正在调用删除文章方法")
+        self.username = input("请验证您的用户名：")
+        file_path = "H://untitled//Spider//BlogData//" + self.username + "//"
+        self.article_list = os.listdir(file_path)
+        print("*" * 20)
+        if len(self.article_list) == 0:
+            print("您还没有写文章！")
+        for article_name in self.article_list:
+            print(article_name)
+        print("*" * 20)
+        user_decision = input("请输入要删除的文章名:") + '.txt'
+        del_path = "H://untitled//Spider//BlogData//" + self.username + "//" + user_decision
+        os.remove(del_path)
+        if user_decision + '.txt' not in self.article_list:
+            print("删除成功！")
+        else:
+            print('删除失败！')
+
+    def modify_article(self):
+        ''' 修改文章 '''
+        print("正在调用修改文章方法")
+        self.username = input("请验证您的用户名：")
+        file_path = "H://untitled//Spider//BlogData//" + self.username + "//"
+        self.article_list = os.listdir(file_path)
+        print("*" * 20)
+        if len(self.article_list) == 0:
+            print("您还没有写文章！")
+        for article_name in self.article_list:
+            print(article_name)
+        print("*" * 20)
+        user_decision = input("请输入要修改的文章名:") + '.txt'
+        change_path = "H://untitled//Spider//BlogData//" + self.username + "//" + user_decision
+        user_selection = input("1.追加内容 2.覆盖内容")
+        if user_selection == '1':
+            text = input("请输入追加内容：")
+            with open(change_path, 'a+') as fp:
+                fp.write(text)
+                fp.close()
+        elif user_selection == '2':
+            text = input("请输入覆盖内容：")
+            with open(change_path, 'w') as fp:
+                fp.write(text)
+                fp.close()
+
+def make_dirs():
+    ''' 创建文件 '''
+    file = os.path.exists('BlogData')
+    if not file:
+        os.makedirs('BlogData')
+        print("创建成功，博客系统数据将保存在'BlogData'文件夹")
+        print('请重新启动程序！')
+        exit()
+    else:
+        print("文件已存在，博客系统数据将保存在'BlogData'文件夹")
+
+make_dirs()
+
+MI = Main_interface()
+MI.welcome_interface()
